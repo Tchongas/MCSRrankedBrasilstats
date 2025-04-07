@@ -116,7 +116,7 @@ def count_bastion_overworld_winrate(data: dict) -> dict:
     return stats
 
 def count_individual_player_forfeits(data: dict) -> dict:
-    forfeits_by_player = defaultdict(lambda: {"forfeits": 0, "total": 0})
+    forfeits_by_player = defaultdict(lambda: {"forfeits": 0, "total": 0, "totalFFs": 0})
     
     for user_data in data.values():
         matches = user_data.get("data", [])
@@ -143,6 +143,9 @@ def count_individual_player_forfeits(data: dict) -> dict:
                         elo_change = change.get("change")
                         if isinstance(elo_change, (int, float)) and elo_change < 0:
                             forfeits_by_player[name]["forfeits"] += 1
+                            break
+                        else:
+                            forfeits_by_player[name]["totalFFs"] += 1
                             break
 
     return forfeits_by_player
@@ -175,12 +178,13 @@ def print_winrates(title: str, stats: dict):
 # === Individual Forfeits Printer ===
 def print_individual_player_forfeits(forfeit_data: dict):
     print("\nIndividual Brazilian Forfeits")
-    print("Player           | Forfeits / Total Matches")
+    print("Player           | FF by player / FF by Oponent / Total Matches")
     print("-" * 40)
     for player, stats in sorted(forfeit_data.items(), key=lambda x: -x[1]["forfeits"]):
         forfeits = stats["forfeits"]
         total = stats["total"]
-        print(f"{player:15} | {forfeits}/{total}")
+        totalffs = stats["totalFFs"]
+        print(f"{player:15} | {forfeits}/{totalffs}/{total}")
 
 
 # === Registry of all stats to run ===
