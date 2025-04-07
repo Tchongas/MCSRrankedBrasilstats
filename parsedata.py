@@ -2,6 +2,7 @@ import json
 from collections import Counter
 from typing import Dict, Callable
 import argparse
+from collections import defaultdict
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--stat", help="Which stat to show (or 'all')")
@@ -114,8 +115,40 @@ def count_bastion_overworld_winrate(data: dict) -> dict:
 
     return stats
 
-# === General-purpose Printer ===
+def count_individual_player_forfeits(data: dict) -> dict:
+    forfeits_by_player = defaultdict(lambda: {"forfeits": 0, "total": 0})
+    
+    for user_data in data.values():
+        matches = user_data.get("data", [])
+        for match in matches:
+            players = match.get("players", [])
+            changes = match.get("changes", [])
+            
+            # Look for BR player
+            br_player = next((p for p in players if p.get("country") == "br"), None)
+            if not br_player:
+                continue
 
+            name = br_player.get("nickname", "Unknown")
+            br_uuid = br_player.get("uuid")
+            forfeited = match.get("forfeited") is True
+
+            # Always count total matches with this BR player
+            forfeits_by_player[name]["total"] += 1
+
+            # If forfeited and lost ELO, count it as a forfeit
+            if forfeited:
+                for change in changes:
+                    if change.get("uuid") == br_uuid:
+                        elo_change = change.get("change")
+                        if isinstance(elo_change, (int, float)) and elo_change < 0:
+                            forfeits_by_player[name]["forfeits"] += 1
+                            break
+
+    return forfeits_by_player
+    
+
+# === General-purpose Printer ===
 def print_counter(title: str, counter: Counter):
     from colorama import Fore, Style
     print(f"\n{Style.BRIGHT}{title}{Style.RESET_ALL}")
@@ -139,6 +172,17 @@ def print_winrates(title: str, stats: dict):
 
         print(f"• {bastion:10} | {overworld:15} → {color}{wins}/{total} wins ({rate:.1f}%)" + Style.RESET_ALL)
 
+# === Individual Forfeits Printer ===
+def print_individual_player_forfeits(forfeit_data: dict):
+    print("\nIndividual Brazilian Forfeits")
+    print("Player           | Forfeits / Total Matches")
+    print("-" * 40)
+    for player, stats in sorted(forfeit_data.items(), key=lambda x: -x[1]["forfeits"]):
+        forfeits = stats["forfeits"]
+        total = stats["total"]
+        print(f"{player:15} | {forfeits}/{total}")
+
+
 # === Registry of all stats to run ===
 
 STAT_COUNTERS: Dict[str, Callable[[dict], Counter]] = {
@@ -146,6 +190,7 @@ STAT_COUNTERS: Dict[str, Callable[[dict], Counter]] = {
     "Overworlds Counts": count_overworld_types,
     "All Matches": count_all_matches,
     "Forfeits": count_forfeited_matches,
+    "Individual Forfeits (Last 50 Matches)": count_individual_player_forfeits,
 }
 
 # === Main Runner ===
@@ -171,6 +216,10 @@ def main():
 
     elif stat_query in ["winrate", "bastion_winrate"]:
         print_winrates("Brazilian Winrate by Bastion and Overworld", count_bastion_overworld_winrate(data))
+
+    elif stat_query in ["individual_forfeits", "player_forfeits"]:
+        result = count_individual_player_forfeits(data)
+        print_individual_player_forfeits(result)
 
     else:
         # Try partial match in STAT_COUNTERS keys
