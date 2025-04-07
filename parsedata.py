@@ -117,9 +117,10 @@ def count_bastion_overworld_winrate(data: dict) -> dict:
 # === General-purpose Printer ===
 
 def print_counter(title: str, counter: Counter):
-    print(f"\n{title}")
+    from colorama import Fore, Style
+    print(f"\n{Style.BRIGHT}{title}{Style.RESET_ALL}")
     for key, count in counter.most_common():
-        print(f"• {key}: {count}")
+        print(f"{Style.BRIGHT}•{Style.RESET_ALL} {key}: {Style.BRIGHT}{count}{Style.RESET_ALL}")
 
 # === Winrate Printer ===
 def print_winrates(title: str, stats: dict):
