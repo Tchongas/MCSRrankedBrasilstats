@@ -177,14 +177,15 @@ def print_winrates(title: str, stats: dict):
 
 # === Individual Forfeits Printer ===
 def print_individual_player_forfeits(forfeit_data: dict):
-    print("\nIndividual Brazilian Forfeits")
+    from colorama import Fore, Style
+    print(f"\n{Style.BRIGHT}Individual Brazilian Forfeits{Style.RESET_ALL}")
     print("Player           | FF by player / FF by Oponent / Total Matches")
     print("-" * 40)
     for player, stats in sorted(forfeit_data.items(), key=lambda x: -x[1]["forfeits"]):
         forfeits = stats["forfeits"]
         total = stats["total"]
         totalffs = stats["totalFFs"]
-        print(f"{player:15} | {forfeits}/{totalffs}/{total}")
+        print(f"{player:20} | {Style.BRIGHT}{forfeits}/{totalffs}/{total}{Style.RESET_ALL}")
 
 
 # === Registry of all stats to run ===
