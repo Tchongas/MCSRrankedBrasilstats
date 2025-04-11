@@ -4,8 +4,9 @@ import os
 import time
 
 # === Configuration ===
-USERNAMES = ["Sanjinhu", "IlovehotFurries", "manubnuy","boosterruns","reeiper","brahmaquente","Psemcovici","sacanagem_online","misfituah","darkk575","subdas","PEDRAOIMENSO","ninguemtapuro__","quinzedoseis","havxy","jocaaposentado__","aeroastroid","luc4szin","rafaelXDP","ArS2023","PTLT","Felipe_neto","3dente","eustacio_bagge","d6nn","procurador","bldragn_","veluxme","kippsy_","heroevil2011","vitelas"]  # Replace with any list of usernames or UUIDs
-LOCAL_DATA_FILE = "all_user_matches.json"
+with open("usernames.txt", "r", encoding="utf-8") as f:
+    USERNAMES = [line.strip() for line in f if line.strip()]
+    LOCAL_DATA_FILE = "all_user_matches.json"
 MAX_RETRIES = 5
 RETRY_DELAY = 5  # seconds
 

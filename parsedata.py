@@ -195,7 +195,6 @@ STAT_COUNTERS: Dict[str, Callable[[dict], Counter]] = {
     "Overworlds Counts": count_overworld_types,
     "All Matches": count_all_matches,
     "Forfeits": count_forfeited_matches,
-    "Individual Forfeits (Last 50 Matches)": count_individual_player_forfeits,
 }
 
 # === Main Runner ===
