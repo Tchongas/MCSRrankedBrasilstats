@@ -60,22 +60,33 @@ def load_all_matches():
 
 # === Main execution ===
 if __name__ == "__main__":
-    all_matches = {}
+    all_matches = load_all_matches()  # Load existing matches if any
 
     print("Fetching match data for users...")
     for username in USERNAMES:
         print(f"→ Fetching matches for {username}...")
+
         matches = fetch_user_matches(username, count=50, includedecay=True)
-        if matches is not None:
-            all_matches[username] = matches
-            print(f"✓ {len(matches)} matches saved for {username}.")
-        else:
+        if not matches:
             print(f"✗ Failed to fetch matches for {username}.")
+            continue
+
+        existing = all_matches.get(username, {}).get("data", [])
+
+        # Only add new matches (by ID)
+        unique_new = matches.get("data", [])
+
+        combined_matches = existing + unique_new
+        all_matches[username] = {
+            "status": "success",
+            "data": combined_matches
+        }
+
+        print(f"✓ Added {len(unique_new)} new matches for {username}.")
 
     save_all_matches(all_matches)
-    print(f"\nAll data saved to '{LOCAL_DATA_FILE}'.")
+    print(f"\nAll updated data saved to '{LOCAL_DATA_FILE}'.")
 
-    # Optional: Load and display a quick summary
-    loaded_data = load_all_matches()
-    for user, match_list in loaded_data.items():
-        print(f"{user}: {len(match_list)} matches")
+    # Optional: Summary
+    for user, match_data in all_matches.items():
+        print(f"{user}: {len(match_data.get('data', []))} total matches")
