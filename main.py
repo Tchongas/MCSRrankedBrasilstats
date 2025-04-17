@@ -2,13 +2,37 @@ import requests
 import json
 import os
 import time
+import sqlite3
 
 # === Configuration ===
 with open("usernames.txt", "r", encoding="utf-8") as f:
     USERNAMES = [line.strip() for line in f if line.strip()]
-    LOCAL_DATA_FILE = "all_user_matches.json"
+
+DB_FILE = "matches.db"
 MAX_RETRIES = 5
 RETRY_DELAY = 5  # seconds
+
+# === SQLite Setup ===
+def setup_database():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS matches (
+            id INTEGER PRIMARY KEY,
+            username TEXT,
+            category TEXT,
+            game_mode TEXT,
+            forfeited BOOLEAN,
+            result_uuid TEXT,
+            result_time INTEGER,
+            season INTEGER,
+            date INTEGER,
+            seed_type TEXT,
+            bastion_type TEXT
+        )
+    ''')
+    conn.commit()
+    return conn
 
 # === Fetch data from API with retry on failure ===
 def fetch_user_matches(identifier, page=0, count=50, match_type=2, tag=None, season=None, includedecay=False):
@@ -46,21 +70,43 @@ def fetch_user_matches(identifier, page=0, count=50, match_type=2, tag=None, sea
             retries += 1
     return None
 
-# === Save data to file ===
-def save_all_matches(data):
-    with open(LOCAL_DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+# === Save matches to SQLite ===
+def insert_matches(conn, username, match_list):
+    c = conn.cursor()
+    new_count = 0
+    for match in match_list:
+        try:
+            c.execute('''
+                INSERT OR IGNORE INTO matches (
+                    id, username, category, game_mode, forfeited,
+                    result_uuid, result_time, season, date,
+                    seed_type, bastion_type
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                match.get("id"),
+                username,
+                match.get("category"),
+                match.get("gameMode"),
+                match.get("forfeited", False),
+                match.get("result", {}).get("uuid"),
+                match.get("result", {}).get("time"),
+                match.get("season"),
+                match.get("date"),
+                match.get("seedType"),
+                match.get("bastionType")
+            ))
+            if c.rowcount:
+                new_count += 1
+        except Exception as e:
+            print(f"✗ Error inserting match {match.get('id')}: {e}")
+    conn.commit()
+    return new_count
 
-# === Load saved data ===
-def load_all_matches():
-    if not os.path.exists(LOCAL_DATA_FILE):
-        return {}
-    with open(LOCAL_DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
 
 # === Main execution ===
 if __name__ == "__main__":
-    all_matches = load_all_matches()  # Load existing matches if any
+    conn = setup_database()
 
     print("Fetching match data for users...")
     for username in USERNAMES:
@@ -71,22 +117,10 @@ if __name__ == "__main__":
             print(f"✗ Failed to fetch matches for {username}.")
             continue
 
-        existing = all_matches.get(username, {}).get("data", [])
+        new_matches = matches.get("data", [])
+        added = insert_matches(conn, username, new_matches)
 
-        # Only add new matches (by ID)
-        unique_new = matches.get("data", [])
+        print(f"✓ Added {added} new matches for {username}.")
 
-        combined_matches = existing + unique_new
-        all_matches[username] = {
-            "status": "success",
-            "data": combined_matches
-        }
-
-        print(f"✓ Added {len(unique_new)} new matches for {username}.")
-
-    save_all_matches(all_matches)
-    print(f"\nAll updated data saved to '{LOCAL_DATA_FILE}'.")
-
-    # Optional: Summary
-    for user, match_data in all_matches.items():
-        print(f"{user}: {len(match_data.get('data', []))} total matches")
+    conn.close()
+    print(f"\nAll match data saved to SQLite database '{DB_FILE}'.")

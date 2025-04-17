@@ -2,56 +2,22 @@
 
 A simple Python project for analyzing match data from brazilian players.
 
-### 1. Fetch All Matches
+### Fetch All Matches
 Fetch match data for all users (Run this first):
 
 ```bash
 python main.py
 ```
-
-### 2. Remove Duplicate Matches
-Clean up duplicate entries from the dataset:
+### Usage Examples
 
 ```bash
-python removedupes.py
+python query.py "SELECT * FROM matches WHERE forfeited = 1"
 ```
 
-### 3. Parse and Analyze Data
-
-#### All Statistics
 ```bash
-python parsedata.py --stat all
+python query.py "SELECT * FROM matches WHERE forfeited = 1 AND seed_type = 'BURIED_TREASURE'"
 ```
 
-#### Individual Forfeits
-```bash
-python parsedata.py --stat individual_forfeits
-```
-
-#### Win Rate
-```bash
-python parsedata.py --stat winrate
-```
-
-#### Matches Played
-```bash
-python parsedata.py --stat matches
-```
-
-#### Forfeits
-```bash
-python parsedata.py --stat forfeits
-```
-
-#### Bastions
-```bash
-python parsedata.py --stat bastions
-```
-
-#### Overworlds
-```bash
-python parsedata.py --stat overworlds
-```
 
 ---
 
@@ -60,6 +26,6 @@ python parsedata.py --stat overworlds
 ```
 .
 ├── main.py              # Fetches match data for users
-├── removedupes.py       # Removes duplicate match entries
-├── parsedata.py         # Parses and analyzes match statistics
+├── query.py             # Executes SQL queries on the database, Usage example: python query.py "SELECT * FROM matches WHERE forfeited = 1"
+├── usernames.txt        # List of usernames to fetch data for
 ```
